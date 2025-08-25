@@ -1,0 +1,152 @@
+Index: internal/model/handlers.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package model\n\nimport (\n\t\"fmt\"\n\t\"pacmanager/internal/packages\"\n\t\"pacmanager/internal/ui\"\n\n\t\"github.com/charmbracelet/bubbles/table\"\n\ttea \"github.com/charmbracelet/bubbletea\"\n\t\"github.com/charmbracelet/lipgloss\"\n)\n\n//TODO：持久化存储备注或借助软件包备注程序\n//TODO：备注编辑界面移动光标\n\n\nfunc (m Model) Init() tea.Cmd {\n\t// 在初始化时获取所有包信息\n\treturn tea.Batch(\n\t\ttea.SetWindowTitle(\"包管理器\"),\n\t)\n}\n\nfunc (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {\n\tif m.ShowMenu {\n\t\tswitch msg := msg.(type) {\n\t\tcase tea.KeyMsg:\n\t\t\tswitch msg.String() {\n\t\t\tcase \"down\":\n\t\t\t\tif m.Choice < 2 {\n\t\t\t\t\tm.Choice++\n\t\t\t\t}\n\t\t\tcase \"up\":\n\t\t\t\tif m.Choice > 0 {\n\t\t\t\t\tm.Choice--\n\t\t\t\t}\n\t\t\tcase \"enter\":\n\t\t\t\tif m.Choice == 2 { // 退出选项\n\t\t\t\t\treturn m, tea.Quit\n\t\t\t\t}\n\t\t\t\tm.ShowMenu = false\n\t\t\t\t// 根据选择过滤包\n\t\t\t\tm.FilteredPackages = m.FilterPackages(m.Choice)\n\t\t\t\tm.Table = ui.CreateTable(m.FilteredPackages)\n\t\t\t\t// 默认选中第一个包\n\t\t\t\tif len(m.FilteredPackages) > 0 {\n\t\t\t\t\tm.SelectedPackage = &m.FilteredPackages[0]\n\t\t\t\t}\n\t\t\tcase \"ctrl+c\", \"esc\":\n\t\t\t\treturn m, tea.Quit\n\t\t\tcase \"q\":\n\t\t\t\treturn m, tea.Quit\n\t\t\t}\n\t\t}\n\t} else if m.EditingNotes {\n\t\t// 处理备注编辑状态\n\t\tswitch msg := msg.(type) {\n\t\tcase tea.KeyMsg:\n\t\t\tswitch msg.String() {\n\t\t\tcase \"enter\":\n\t\t\t\t// 保存备注\n\t\t\t\tif m.SelectedPackage != nil {\n\t\t\t\t\tm.SelectedPackage.Notes = m.NewNotes\n\t\t\t\t\t// 更新所有包列表中的备注\n\t\t\t\t\tfor i := range m.AllPackages {\n\t\t\t\t\t\tif m.AllPackages[i].Name == m.SelectedPackage.Name {\n\t\t\t\t\t\t\tm.AllPackages[i].Notes = m.NewNotes\n\t\t\t\t\t\t\tbreak\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tm.EditingNotes = false\n\t\t\t\tm.NewNotes = \"\"\n\t\t\tcase \"esc\":\n\t\t\t\t// 取消编辑\n\t\t\t\tm.EditingNotes = false\n\t\t\t\tm.NewNotes = \"\"\n\t\t\tcase \"backspace\":\n\t\t\t\tif len(m.NewNotes) > 0 {\n\t\t\t\t\tm.NewNotes = m.NewNotes[:len(m.NewNotes)-1]\n\t\t\t\t}\n\t\t\tdefault:\n\t\t\t\t// 添加字符到备注\n\t\t\t\tif msg.Type == tea.KeyRunes {\n\t\t\t\t\tm.NewNotes += msg.String()\n\t\t\t\t}\n\t\t\t\t// 显式处理空格键\n\t\t\t\tif msg.String() == \" \" {\n\t\t\t\t\tm.NewNotes += \" \"\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t} else {\n\t\tvar cmd tea.Cmd\n\t\tm.Table, cmd = m.Table.Update(msg)\n\t\tswitch msg := msg.(type) {\n\t\tcase tea.KeyMsg:\n\t\t\tswitch msg.String() {\n\t\t\tcase \"esc\":\n\t\t\t\treturn m, tea.Quit\n\t\t\tcase \"ctrl+c\":\n\t\t\t\treturn m, tea.Quit\n\t\t\tcase \"q\":\n\t\t\t\tm.ShowMenu = true\n\t\t\t\tm.Table = table.Model{} // 清空表格\n\t\t\t\tm.SelectedPackage = nil\n\t\t\tcase \"left\":\n\t\t\t\tm.Table.MoveUp(13)\n\t\t\t\tm.SelectedPackage = &m.FilteredPackages[m.GetCurrentSelectedIndex()]\n\t\t\tcase \"right\":\n\t\t\t\tm.Table.MoveDown(13)\n\t\t\t\tm.SelectedPackage = &m.FilteredPackages[m.GetCurrentSelectedIndex()]\n\t\t\tcase \"e\":\n\t\t\t\t// 编辑备注\n\t\t\t\tif m.SelectedPackage != nil {\n\t\t\t\t\tm.EditingNotes = true\n\t\t\t\t\tm.NewNotes = m.SelectedPackage.Notes\n\t\t\t\t}\n\t\t\tdefault:\n\t\t\t\t// 当表格选中项改变时，自动更新选中的包\n\t\t\t\tm.SelectedPackage = m.GetCurrentSelectedPackage()\n\t\t\t}\n\t\t}\n\t\treturn m, cmd\n\t}\n\treturn m, nil\n}\n\nfunc (m Model) View() string {\n\tif m.ShowMenu {\n\t\t// 显示菜单\n\t\tmenu := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(\"62\")).Render(\"选择要显示的包类型:\")\n\t\tchoice1 := \"  显示所有包\"\n\t\tchoice2 := \"  仅显示显式安装的包\"\n\t\tchoice3 := \"  退出\"\n\t\t\n\t\tif m.Choice == 0 {\n\t\t\tchoice1 = \"> \" + lipgloss.NewStyle().Foreground(lipgloss.Color(\"205\")).Render(\"显示所有包\")\n\t\t} else {\n\t\t\tchoice1 = \"  \" + choice1\n\t\t}\n\t\t\n\t\tif m.Choice == 1 {\n\t\t\tchoice2 = \"> \" + lipgloss.NewStyle().Foreground(lipgloss.Color(\"205\")).Render(\"仅显示显式安装的包\")\n\t\t} else {\n\t\t\tchoice2 = \"  \" + choice2\n\t\t}\n\t\t\n\t\tif m.Choice == 2 {\n\t\t\tchoice3 = \"> \" + lipgloss.NewStyle().Foreground(lipgloss.Color(\"205\")).Render(\"退出\")\n\t\t} else {\n\t\t\tchoice3 = \"  \" + choice3\n\t\t}\n\t\t\n\t\t// 添加菜单描述\n\t\tdescription := \"退出:q，选择:enter\"\n\t\t\n\t\treturn lipgloss.JoinVertical(lipgloss.Left, menu, choice1, choice2, choice3, \"\", description)\n\t} else if m.EditingNotes {\n\t\t// 显示备注编辑界面\n\t\ttitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(\"62\")).Render(\"编辑备注\")\n\t\tpkgInfo := fmt.Sprintf(\"包名: %s\", m.SelectedPackage.Name)\n\t\tnotesLabel := \"备注:\"\n\t\tnotesInput := m.NewNotes + \"█\" // 添加光标\n\t\t\n\t\tinstructions := \"Enter: 保存, Esc: 取消\"\n\t\t\n\t\treturn lipgloss.JoinVertical(lipgloss.Left, title, \"\", pkgInfo, notesLabel, notesInput, \"\", instructions)\n\t} else {\n\t\t// 显示表格和选中包的详细信息\n\t\tview := m.Table.View()\n\t\t\n\t\t// 计算软件包总数和当前选中软件包的百分比\n\t\ttotalPackages := len(m.FilteredPackages)\n\t\tcurrentIndex := m.Table.Cursor() + 1\n\t\tpercentage := 0\n\t\tif totalPackages > 0 {\n\t\t\tpercentage = (currentIndex * 100) / totalPackages\n\t\t}\n\t\t\n\t\t// 添加统计信息\n\t\tstats := fmt.Sprintf(\"当前位置: %d/%d (%d%%)\", currentIndex, totalPackages, percentage)\n\t\tview = lipgloss.JoinVertical(lipgloss.Left, view, stats)\n\t\t\n\t\t// 显示选中包的详细信息\n\t\tif m.SelectedPackage != nil {\n\t\t\tdetailsText := fmt.Sprintf(\"选中的包详情:\\n包名: %s\\n版本: %s\\n大小: %s\\n安装日期: %s\\n安装类型: %s\",\n\t\t\t\tm.SelectedPackage.Name,\n\t\t\t\tm.SelectedPackage.Version,\n\t\t\t\tm.SelectedPackage.Size,\n\t\t\t\tm.SelectedPackage.InstallDate.Format(\"2006-01-02 15:04:05\"),\n\t\t\t\tfunc() string {\n\t\t\t\t\tif m.SelectedPackage.Explicit {\n\t\t\t\t\t\treturn \"显式安装\"\n\t\t\t\t\t}\n\t\t\t\t\treturn \"依赖安装\"\n\t\t\t\t}(),\n\t\t\t)\n\t\t\t\n\t\t\t// 添加备注信息\n\t\t\tif m.SelectedPackage.Notes != \"\" {\n\t\t\t\tdetailsText += fmt.Sprintf(\"\\n备注: %s\", m.SelectedPackage.Notes)\n\t\t\t} else {\n\t\t\t\tdetailsText += \"\\n备注: (无)\"\n\t\t\t}\n\t\t\t\n\t\t\t// 添加依赖或反向依赖信息\n\t\t\tif m.SelectedPackage.Explicit {\n\t\t\t\t// 对于显式安装的包，显示依赖\n\t\t\t\tif deps, err := packages.GetDependencies(m.SelectedPackage.Name); err == nil {\n\t\t\t\t\tdetailsText += fmt.Sprintf(\"\\n依赖:\\n%s\", deps)\n\t\t\t\t} else {\n\t\t\t\t\tdetailsText += fmt.Sprintf(\"\\n依赖: 获取失败 (%s)\", err.Error())\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\t// 对于依赖安装的包，显示反向依赖\n\t\t\t\tif rdeps, err := packages.GetReverseDependencies(m.SelectedPackage.Name); err == nil {\n\t\t\t\t\tdetailsText += fmt.Sprintf(\"\\n反向依赖:\\n%s\", rdeps)\n\t\t\t\t} else {\n\t\t\t\t\tdetailsText += fmt.Sprintf(\"\\n反向依赖: 获取失败 (%s)\", err.Error())\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\tdetails := lipgloss.NewStyle().\n\t\t\t\tBorderStyle(lipgloss.NormalBorder()).\n\t\t\t\tBorderForeground(lipgloss.Color(\"240\")).\n\t\t\t\tPadding(1).\n\t\t\t\tRender(detailsText)\n\t\t\tview = lipgloss.JoinHorizontal(lipgloss.Top, view, \"  \", details)\n\t\t}\n\t\t\n\t\treturn view + \"\\n\\n导航: ↑/↓ ，翻页: ←/→ ，编辑备注: e ，返回: q ,退出: esc\"\n\t}\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/model/handlers.go b/internal/model/handlers.go
+--- a/internal/model/handlers.go	(revision 25c6bfed448fd4926c3eb7f1c2422e81e74b7bb4)
++++ b/internal/model/handlers.go	(date 1756140177979)
+@@ -2,7 +2,6 @@
+ 
+ import (
+ 	"fmt"
+-	"pacmanager/internal/packages"
+ 	"pacmanager/internal/ui"
+ 
+ 	"github.com/charmbracelet/bubbles/table"
+@@ -13,7 +12,6 @@
+ //TODO：持久化存储备注或借助软件包备注程序
+ //TODO：备注编辑界面移动光标
+ 
+-
+ func (m Model) Init() tea.Cmd {
+ 	// 在初始化时获取所有包信息
+ 	return tea.Batch(
+@@ -133,28 +131,28 @@
+ 		choice1 := "  显示所有包"
+ 		choice2 := "  仅显示显式安装的包"
+ 		choice3 := "  退出"
+-		
++
+ 		if m.Choice == 0 {
+ 			choice1 = "> " + lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("显示所有包")
+ 		} else {
+ 			choice1 = "  " + choice1
+ 		}
+-		
++
+ 		if m.Choice == 1 {
+ 			choice2 = "> " + lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("仅显示显式安装的包")
+ 		} else {
+ 			choice2 = "  " + choice2
+ 		}
+-		
++
+ 		if m.Choice == 2 {
+ 			choice3 = "> " + lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("退出")
+ 		} else {
+ 			choice3 = "  " + choice3
+ 		}
+-		
++
+ 		// 添加菜单描述
+ 		description := "退出:q，选择:enter"
+-		
++
+ 		return lipgloss.JoinVertical(lipgloss.Left, menu, choice1, choice2, choice3, "", description)
+ 	} else if m.EditingNotes {
+ 		// 显示备注编辑界面
+@@ -162,14 +160,14 @@
+ 		pkgInfo := fmt.Sprintf("包名: %s", m.SelectedPackage.Name)
+ 		notesLabel := "备注:"
+ 		notesInput := m.NewNotes + "█" // 添加光标
+-		
++
+ 		instructions := "Enter: 保存, Esc: 取消"
+-		
++
+ 		return lipgloss.JoinVertical(lipgloss.Left, title, "", pkgInfo, notesLabel, notesInput, "", instructions)
+ 	} else {
+ 		// 显示表格和选中包的详细信息
+ 		view := m.Table.View()
+-		
++
+ 		// 计算软件包总数和当前选中软件包的百分比
+ 		totalPackages := len(m.FilteredPackages)
+ 		currentIndex := m.Table.Cursor() + 1
+@@ -177,11 +175,11 @@
+ 		if totalPackages > 0 {
+ 			percentage = (currentIndex * 100) / totalPackages
+ 		}
+-		
++
+ 		// 添加统计信息
+ 		stats := fmt.Sprintf("当前位置: %d/%d (%d%%)", currentIndex, totalPackages, percentage)
+ 		view = lipgloss.JoinVertical(lipgloss.Left, view, stats)
+-		
++
+ 		// 显示选中包的详细信息
+ 		if m.SelectedPackage != nil {
+ 			detailsText := fmt.Sprintf("选中的包详情:\n包名: %s\n版本: %s\n大小: %s\n安装日期: %s\n安装类型: %s",
+@@ -196,31 +194,31 @@
+ 					return "依赖安装"
+ 				}(),
+ 			)
+-			
++
+ 			// 添加备注信息
+ 			if m.SelectedPackage.Notes != "" {
+ 				detailsText += fmt.Sprintf("\n备注: %s", m.SelectedPackage.Notes)
+ 			} else {
+ 				detailsText += "\n备注: (无)"
+ 			}
+-			
+-			// 添加依赖或反向依赖信息
+-			if m.SelectedPackage.Explicit {
+-				// 对于显式安装的包，显示依赖
+-				if deps, err := packages.GetDependencies(m.SelectedPackage.Name); err == nil {
+-					detailsText += fmt.Sprintf("\n依赖:\n%s", deps)
+-				} else {
+-					detailsText += fmt.Sprintf("\n依赖: 获取失败 (%s)", err.Error())
+-				}
+-			} else {
+-				// 对于依赖安装的包，显示反向依赖
+-				if rdeps, err := packages.GetReverseDependencies(m.SelectedPackage.Name); err == nil {
+-					detailsText += fmt.Sprintf("\n反向依赖:\n%s", rdeps)
+-				} else {
+-					detailsText += fmt.Sprintf("\n反向依赖: 获取失败 (%s)", err.Error())
+-				}
+-			}
+-			
++			//
++			//// 添加依赖或反向依赖信息
++			//if m.SelectedPackage.Explicit {
++			//	// 对于显式安装的包，显示依赖
++			//	if deps, err := packages.GetDependencies(m.SelectedPackage.Name); err == nil {
++			//		detailsText += fmt.Sprintf("\n依赖:\n%s", deps)
++			//	} else {
++			//		detailsText += fmt.Sprintf("\n依赖: 获取失败 (%s)", err.Error())
++			//	}
++			//} else {
++			//	// 对于依赖安装的包，显示反向依赖
++			//	if rdeps, err := packages.GetReverseDependencies(m.SelectedPackage.Name); err == nil {
++			//		detailsText += fmt.Sprintf("\n反向依赖:\n%s", rdeps)
++			//	} else {
++			//		detailsText += fmt.Sprintf("\n反向依赖: 获取失败 (%s)", err.Error())
++			//	}
++			//}
++			//
+ 			details := lipgloss.NewStyle().
+ 				BorderStyle(lipgloss.NormalBorder()).
+ 				BorderForeground(lipgloss.Color("240")).
+@@ -228,7 +226,7 @@
+ 				Render(detailsText)
+ 			view = lipgloss.JoinHorizontal(lipgloss.Top, view, "  ", details)
+ 		}
+-		
++
+ 		return view + "\n\n导航: ↑/↓ ，翻页: ←/→ ，编辑备注: e ，返回: q ,退出: esc"
+ 	}
+ }
