@@ -26,8 +26,26 @@ type fetchDepsMsg struct {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// 如果还没有初始化包信息，先初始化
-	if !m.Initialized {
+	// 延迟初始化包信息，仅在真正需要时初始化
+	// 只有在需要显示表格或处理包相关操作时才初始化
+	needInit := false
+	
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		// 只有在需要处理包相关操作时才初始化
+		switch msg.String() {
+		case "up", "down", "left", "right", "enter", "e":
+			needInit = true
+		}
+	default:
+		// 对于其他消息类型，如果表格已经显示则需要初始化
+		if !m.ShowDetails && !m.EditingNotes {
+			needInit = true
+		}
+	}
+	
+	// 如果需要初始化且还没有初始化包信息，先初始化
+	if needInit && !m.Initialized {
 		// 直接调用初始化方法
 		modelPtr := &m
 		modelPtr.InitializePackages()
@@ -126,8 +144,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Dependencies = nil
 					m.ReverseDependencies = nil
 					m.NeedFetchDeps = true
-					// 返回获取依赖的命令
-					return m, fetchDependencies(m.SelectedPackage.Name)
+					// 延迟获取依赖信息，仅在真正需要时获取
+					// return m, fetchDependencies(m.SelectedPackage.Name)
 				}
 			default:
 				// 当表格选中项改变时，自动更新选中的包
@@ -163,9 +181,9 @@ func (m Model) View() string {
 		pkgVersion := modelPtr.GetCurrentPackageVersion()
 		
 		// 延后获取依赖和反向依赖信息
-		if m.Dependencies == nil && m.ReverseDependencies == nil && !m.NeedFetchDeps {
-			m.NeedFetchDeps = true
-			// 不再在这里直接获取依赖信息，而是在Update函数中通过命令获取
+		if m.Dependencies == nil && m.ReverseDependencies == nil && m.NeedFetchDeps {
+			// 真正需要时才获取依赖信息
+			// 这里不再主动获取，而是在Update函数中通过命令异步获取
 		}
 		
 		// 构建详情信息

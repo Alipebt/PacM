@@ -208,7 +208,10 @@ func GetPackageVersion(packageName string) string {
 
 // GetPackages 获取所有包信息
 func GetPackages() []PackageInfo {
+	// 延迟获取显式安装包列表，仅在需要时获取
 	explicitPackages := GetExplicitPackages()
+	
+	// 延迟获取所有包信息，仅在需要时获取
 	allPackages := GetAllPackages(explicitPackages)
 	
 	// 不再在初始化时获取版本信息，而是在需要时获取
