@@ -9,6 +9,7 @@ type PackageInfo struct {
 	InstallDate time.Time
 	Name        string
 	Version     string
+	Size        string
 	Explicit    bool
 	Notes       string // 添加备注字段
 }

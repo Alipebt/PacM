@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98bcb506-8e8a-4301-8de6-ee4810e3bce2" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/internal/model/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/handlers.go" afterDir="false" />
-    </list>
+    <list default="true" id="98bcb506-8e8a-4301-8de6-ee4810e3bce2" name="更改" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,6 +12,11 @@
   </component>
   <component name="GOROOT" url="file:///usr/lib/go" />
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo">{
@@ -65,6 +68,17 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

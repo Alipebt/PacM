@@ -13,8 +13,8 @@ func CreateTable(packages []packages.PackageInfo) table.Model {
 	// 定义列
 	columns := []table.Column{
 		{Title: "序号", Width: 6},
-		{Title: "安装日期", Width: 20},
 		{Title: "包名", Width: 25},
+		{Title: "大小", Width: 10},
 		{Title: "类型", Width: 10},
 	}
 
@@ -27,8 +27,8 @@ func CreateTable(packages []packages.PackageInfo) table.Model {
 		}
 		rows = append(rows, table.Row{
 			fmt.Sprintf("%d", i+1),
-			pkg.InstallDate.Format("2006-01-02 15:04:05"),
 			pkg.Name,
+			pkg.Size, // 显示大小信息
 			installType,
 		})
 	}
