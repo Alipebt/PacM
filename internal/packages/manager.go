@@ -122,7 +122,9 @@ func GetDependencies(packageName string) []string {
 			if strings.Contains(line, " ") {
 				parts := strings.Split(line, " ")
 				if len(parts) > 1 {
-					dependencies = append(dependencies, parts[1])
+					// 合并所有部分（从索引1开始到最后）
+					fullContent := strings.Join(parts[0:], " ")
+					dependencies = append(dependencies, fullContent)
 				}
 			} else {
 				dependencies = append(dependencies, line)
