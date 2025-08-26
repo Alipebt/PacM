@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 	"time"
 )
@@ -19,7 +18,7 @@ func GetExplicitPackages() map[string]bool {
 		fmt.Println("警告: 未找到 pacman")
 		return nil
 	}
-	
+
 	// 执行命令
 	cmd := exec.Command("pacman", "-Qe")
 	out, err := cmd.Output()
@@ -49,7 +48,7 @@ func GetAllPackages(explicit map[string]bool) []PackageInfo {
 		fmt.Println("警告: 未找到 expac")
 		return nil
 	}
-	
+
 	// 尝试执行实际命令
 	cmd := exec.Command("sh", "-c", "expac -H M --timefmt='%F %T' '%l\\t%n\\t%m' | sort -rn")
 	out, err := cmd.Output()
@@ -66,20 +65,20 @@ func GetAllPackages(explicit map[string]bool) []PackageInfo {
 		if len(parts) >= 3 {
 			// 第一部分是日期时间
 			dateTimeStr := parts[0]
-			
+
 			// 第二部分是包名
 			name := parts[1]
-			
+
 			// 第三部分是大小
 			size := parts[2]
-			
+
 			// 解析日期时间
 			installTime, err := time.Parse("2006-01-02 15:04:05", dateTimeStr)
 			if err != nil {
 				fmt.Printf("解析日期时间出错: %v\n", err)
 				continue
 			}
-			
+
 			// 存储包信息
 			pkg := PackageInfo{
 				InstallDate: installTime,
@@ -87,15 +86,10 @@ func GetAllPackages(explicit map[string]bool) []PackageInfo {
 				Size:        size,
 				Explicit:    explicit[name],
 			}
-			
+
 			packages = append(packages, pkg)
 		}
 	}
-
-	// 按安装日期反向排序
-	sort.Slice(packages, func(i, j int) bool {
-		return packages[i].InstallDate.After(packages[j].InstallDate)
-	})
 
 	return packages
 }
@@ -109,7 +103,7 @@ func GetDependencies(packageName string) []string {
 		fmt.Println("警告: 未找到 pactree")
 		return []string{"依赖1", "依赖2", "依赖3"}
 	}
-	
+
 	// 执行命令获取依赖
 	cmd := exec.Command("pactree", "-d", "1", packageName)
 	out, err := cmd.Output()
@@ -117,7 +111,7 @@ func GetDependencies(packageName string) []string {
 		fmt.Printf("执行 pactree -d 1 %s 出错: %v\n", packageName, err)
 		return []string{}
 	}
-	
+
 	var dependencies []string
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	// 跳过第一行（包名本身）
@@ -135,7 +129,7 @@ func GetDependencies(packageName string) []string {
 			}
 		}
 	}
-	
+
 	return dependencies
 }
 
@@ -148,7 +142,7 @@ func GetReverseDependencies(packageName string) []string {
 		fmt.Println("警告: 未找到 pactree")
 		return []string{"反向依赖1", "反向依赖2", "反向依赖3"}
 	}
-	
+
 	// 执行命令获取反向依赖
 	cmd := exec.Command("pactree", "-r", "-d", "1", packageName)
 	out, err := cmd.Output()
@@ -156,7 +150,7 @@ func GetReverseDependencies(packageName string) []string {
 		fmt.Printf("执行 pactree -r -d 1 %s 出错: %v\n", packageName, err)
 		return []string{}
 	}
-	
+
 	var reverseDependencies []string
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	// 跳过第一行（包名本身）
@@ -174,7 +168,7 @@ func GetReverseDependencies(packageName string) []string {
 			}
 		}
 	}
-	
+
 	return reverseDependencies
 }
 
@@ -187,7 +181,7 @@ func GetPackageVersion(packageName string) string {
 		fmt.Println("警告: 未找到 pacman")
 		return "1.0.0"
 	}
-	
+
 	// 执行命令获取版本信息
 	cmd := exec.Command("pacman", "-Q", packageName)
 	out, err := cmd.Output()
@@ -195,27 +189,27 @@ func GetPackageVersion(packageName string) string {
 		fmt.Printf("执行 pacman -Q %s 出错: %v\n", packageName, err)
 		return "未知"
 	}
-	
+
 	// 解析输出获取版本信息
 	output := strings.TrimSpace(string(out))
 	parts := strings.Fields(output)
 	if len(parts) >= 2 {
 		return parts[1]
 	}
-	
+
 	return "未知"
 }
 
 // GetPackages 获取所有包信息
 func GetPackages() []PackageInfo {
-	// 延迟获取显式安装包列表，仅在需要时获取
+	// 获取显式安装包列表
 	explicitPackages := GetExplicitPackages()
-	
-	// 延迟获取所有包信息，仅在需要时获取
+
+	// 获取所有包信息
 	allPackages := GetAllPackages(explicitPackages)
-	
+
 	// 不再在初始化时获取版本信息，而是在需要时获取
 	// 版本信息将在查看详情时获取
-	
+
 	return allPackages
 }

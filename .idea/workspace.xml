@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98bcb506-8e8a-4301-8de6-ee4810e3bce2" name="更改" comment="" />
+    <list default="true" id="98bcb506-8e8a-4301-8de6-ee4810e3bce2" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/model/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/model/model.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/model.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/packages/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/packages/manager.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/ui/table.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/ui/table.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,6 +38,9 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Go 构建.go build pacm.executor": "Debug",
+    "Go 构建.go build pacmanager.executor": "Debug",
+    "Go 测试.go test PacM.executor": "Debug",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.GoLinterPluginOnboarding": "true",
     "RunOnceActivity.GoLinterPluginStorageMigration": "true",
@@ -39,15 +50,26 @@
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "b2871880",
+    "git-widget-placeholder": "28321f04",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/home/alipebt",
+    "last_opened_file_path": "/home/alipebt/code/PacM",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration name="go build pacm" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="PacM" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="pacm" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

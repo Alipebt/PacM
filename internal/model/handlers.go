@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"pacmanager/internal/packages"
+	"pacm/internal/packages"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -10,7 +10,6 @@ import (
 
 //TODO：持久化存储备注或借助软件包备注程序
 //TODO：备注编辑界面移动光标
-
 
 func (m Model) Init() tea.Cmd {
 	// 不在初始化时获取所有包信息，而是在需要时获取
@@ -21,39 +20,22 @@ func (m Model) Init() tea.Cmd {
 
 // 定义自定义消息类型
 type fetchDepsMsg struct {
-	dependencies     []string
+	dependencies        []string
 	reverseDependencies []string
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// 延迟初始化包信息，仅在真正需要时初始化
-	// 只有在需要显示表格或处理包相关操作时才初始化
-	needInit := false
-	
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		// 只有在需要处理包相关操作时才初始化
-		switch msg.String() {
-		case "up", "down", "left", "right", "enter", "e":
-			needInit = true
-		}
-	default:
-		// 对于其他消息类型，如果表格已经显示则需要初始化
-		if !m.ShowDetails && !m.EditingNotes {
-			needInit = true
-		}
-	}
-	
+
 	// 如果需要初始化且还没有初始化包信息，先初始化
-	if needInit && !m.Initialized {
+	if !m.Initialized {
 		// 直接调用初始化方法
 		modelPtr := &m
 		modelPtr.InitializePackages()
-		
+
 		// 返回更新后的模型和nil命令
 		return m, nil
 	}
-	
+
 	if m.ShowDetails {
 		// 处理详情信息显示状态
 		switch msg := msg.(type) {
@@ -64,7 +46,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ShowDetails = false
 				m.Dependencies = nil
 				m.ReverseDependencies = nil
-				m.NeedFetchDeps = false
 			case "ctrl+c":
 				return m, tea.Quit
 			}
@@ -72,7 +53,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// 接收依赖信息
 			m.Dependencies = msg.dependencies
 			m.ReverseDependencies = msg.reverseDependencies
-			m.NeedFetchDeps = false
 		}
 	} else if m.EditingNotes {
 		// 处理备注编辑状态
@@ -140,12 +120,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// 显示详情信息
 				if m.SelectedPackage != nil {
 					m.ShowDetails = true
-					// 不再立即获取依赖和反向依赖信息，延后到查看详情时获取
-					m.Dependencies = nil
-					m.ReverseDependencies = nil
-					m.NeedFetchDeps = true
-					// 延迟获取依赖信息，仅在真正需要时获取
-					// return m, fetchDependencies(m.SelectedPackage.Name)
 				}
 			default:
 				// 当表格选中项改变时，自动更新选中的包
@@ -163,7 +137,7 @@ func fetchDependencies(packageName string) tea.Cmd {
 		dependencies := packages.GetDependencies(packageName)
 		reverseDependencies := packages.GetReverseDependencies(packageName)
 		return fetchDepsMsg{
-			dependencies:     dependencies,
+			dependencies:        dependencies,
 			reverseDependencies: reverseDependencies,
 		}
 	}
@@ -175,17 +149,20 @@ func (m Model) View() string {
 		if m.SelectedPackage == nil {
 			return "未选择包"
 		}
-		
+
 		// 获取当前选中包的版本信息
 		modelPtr := &m
 		pkgVersion := modelPtr.GetCurrentPackageVersion()
-		
+
 		// 延后获取依赖和反向依赖信息
-		if m.Dependencies == nil && m.ReverseDependencies == nil && m.NeedFetchDeps {
-			// 真正需要时才获取依赖信息
-			// 这里不再主动获取，而是在Update函数中通过命令异步获取
+		if m.Dependencies == nil && m.ReverseDependencies == nil {
+			if m.SelectedPackage.Explicit == true {
+				m.Dependencies = packages.GetDependencies(m.SelectedPackage.Name)
+			} else {
+				m.ReverseDependencies = packages.GetReverseDependencies(m.SelectedPackage.Name)
+			}
 		}
-		
+
 		// 构建详情信息
 		details := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("包详情信息")
 		pkgName := fmt.Sprintf("包名: %s", m.SelectedPackage.Name)
@@ -198,7 +175,7 @@ func (m Model) View() string {
 			}
 			return "依赖安装"
 		}())
-		
+
 		// 添加备注信息
 		notes := "备注: "
 		if m.SelectedPackage.Notes != "" {
@@ -206,9 +183,9 @@ func (m Model) View() string {
 		} else {
 			notes += "(无)"
 		}
-		
+
 		// 构建依赖信息
-		dependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n依赖 (显式安装的软件):")
+		dependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n依赖:")
 		var dependenciesList string
 		if len(m.Dependencies) > 0 {
 			for _, dep := range m.Dependencies {
@@ -217,9 +194,9 @@ func (m Model) View() string {
 		} else {
 			dependenciesList = "  (无)\n"
 		}
-		
+
 		// 构建反向依赖信息
-		reverseDependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n反向依赖 (依赖安装):")
+		reverseDependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n反向依赖:")
 		var reverseDependenciesList string
 		if len(m.ReverseDependencies) > 0 {
 			for _, dep := range m.ReverseDependencies {
@@ -228,21 +205,21 @@ func (m Model) View() string {
 		} else {
 			reverseDependenciesList = "  (无)\n"
 		}
-		
+
 		instructions := "\n导航: Esc/q 返回, Ctrl+C 退出"
-		
-		return lipgloss.JoinVertical(lipgloss.Left, 
-			details, 
-			pkgName, 
-			pkgVersionStr, 
+
+		return lipgloss.JoinVertical(lipgloss.Left,
+			details,
+			pkgName,
+			pkgVersionStr,
 			pkgSize,
-			pkgInstallDate, 
-			pkgInstallType, 
-			notes, 
-			dependenciesTitle, 
-			dependenciesList, 
-			reverseDependenciesTitle, 
-			reverseDependenciesList, 
+			pkgInstallDate,
+			pkgInstallType,
+			notes,
+			dependenciesTitle,
+			dependenciesList,
+			reverseDependenciesTitle,
+			reverseDependenciesList,
 			instructions)
 	} else if m.EditingNotes {
 		// 显示备注编辑界面
@@ -250,14 +227,14 @@ func (m Model) View() string {
 		pkgInfo := fmt.Sprintf("包名: %s", m.SelectedPackage.Name)
 		notesLabel := "备注:"
 		notesInput := m.NewNotes + "█" // 添加光标
-		
+
 		instructions := "Enter: 保存, Esc: 取消"
-		
+
 		return lipgloss.JoinVertical(lipgloss.Left, title, "", pkgInfo, notesLabel, notesInput, "", instructions)
 	} else {
 		// 显示表格
 		view := m.Table.View()
-		
+
 		// 计算软件包总数和当前选中软件包的百分比
 		totalPackages := len(m.FilteredPackages)
 		currentIndex := m.Table.Cursor() + 1
@@ -265,11 +242,11 @@ func (m Model) View() string {
 		if totalPackages > 0 {
 			percentage = (currentIndex * 100) / totalPackages
 		}
-		
+
 		// 添加统计信息
-		stats := fmt.Sprintf("当前位置: %d/%d (%d%%)", currentIndex, totalPackages, percentage)
+		stats := fmt.Sprintf("%d/%d (%d%%)", currentIndex, totalPackages, percentage)
 		view = lipgloss.JoinVertical(lipgloss.Left, view, stats)
-		
+
 		return view + "\n\n导航: ↑/↓ ，翻页: ←/→ ，编辑备注: e ，查看详情: Enter ，退出: q"
 	}
 }

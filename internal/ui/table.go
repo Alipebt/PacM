@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"pacmanager/internal/packages"
+	"pacm/internal/packages"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
@@ -27,9 +27,9 @@ func CreateTable(packages []packages.PackageInfo) table.Model {
 		}
 		rows = append(rows, table.Row{
 			fmt.Sprintf("%d", i+1),
-			pkg.Name,
-			pkg.Size, // 显示大小信息
-			installType,
+			pkg.Name,    // 名称
+			pkg.Size,    // 大小
+			installType, // 类型
 		})
 	}
 

@@ -1,4 +1,4 @@
-module pacmanager
+module pacm
 
 go 1.24.1
 
