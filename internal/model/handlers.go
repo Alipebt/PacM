@@ -188,8 +188,20 @@ func (m Model) View() string {
 		dependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n依赖:")
 		var dependenciesList string
 		if len(m.Dependencies) > 0 {
+
+			var tmpdep = ""
 			for _, dep := range m.Dependencies {
-				dependenciesList += fmt.Sprintf("  %s\n", dep)
+				if len(m.Dependencies) >= 10 {
+					if tmpdep != "" {
+						dependenciesList += fmt.Sprintf("  %-25s%-25s\n", tmpdep, dep)
+						tmpdep = ""
+					} else {
+						tmpdep = dep
+					}
+				} else {
+					dependenciesList += fmt.Sprintf("  %s\n", dep)
+				}
+
 			}
 		} else {
 			dependenciesList = "  (无)\n"
@@ -199,8 +211,22 @@ func (m Model) View() string {
 		reverseDependenciesTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62")).Render("\n反向依赖:")
 		var reverseDependenciesList string
 		if len(m.ReverseDependencies) > 0 {
+			var tmpdep = ""
 			for _, dep := range m.ReverseDependencies {
-				reverseDependenciesList += fmt.Sprintf("  %s\n", dep)
+				if len(m.ReverseDependencies) >= 10 {
+					if tmpdep != "" {
+						reverseDependenciesList += fmt.Sprintf("  %-25s%-25s\n", tmpdep, dep)
+						tmpdep = ""
+					} else {
+						tmpdep = dep
+					}
+				} else {
+					reverseDependenciesList += fmt.Sprintf("  %s\n", dep)
+				}
+			}
+			// 处理最后一个未配对的依赖项（如果有的话）
+			if tmpdep != "" {
+				reverseDependenciesList += fmt.Sprintf("  %-25s\n", tmpdep)
 			}
 		} else {
 			reverseDependenciesList = "  (无)\n"
